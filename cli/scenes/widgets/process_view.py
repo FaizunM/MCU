@@ -11,7 +11,6 @@ class ProcessView:
         self.pc_pos = 0x0
 
     def draw(self):
-        self.win.clear()
         self.data = self.mcu.program_memory.memory
         self.win.box()
         self.win.addstr(0, 2, f" {self.title} ")
@@ -23,6 +22,8 @@ class ProcessView:
 
         self.win.addstr(2, 3, f"Offset [h]")
         for y in range(row):
+            if y + self.offset > len(self.data):
+                return
             mode = (
                 curses.A_REVERSE
                 if (y + self.offset) == self.pc_pos
@@ -48,7 +49,7 @@ class ProcessView:
             except:
                 pass
 
-        self.win.refresh()
+        self.win.noutrefresh()
 
     def event_listener(self, key):
         if key in [ord("C"), ord("c")]:

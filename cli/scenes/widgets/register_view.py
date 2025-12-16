@@ -11,7 +11,6 @@ class RegisterView:
         self.pos_y = 0x0
 
     def draw(self):
-        self.win.clear()
         self.data = self.getter()
         self.win.box()
         self.win.addstr(0, 2, f" {self.title} ")
@@ -40,7 +39,7 @@ class RegisterView:
                 35,
                 f"{self.data[y + self.offset]:04X} | {self.data[y + self.offset]}",
             )
-        self.win.refresh()
+        self.win.noutrefresh()
 
     def event_listener(self, key):
         if key == curses.KEY_DOWN:

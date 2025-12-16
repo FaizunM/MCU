@@ -1,15 +1,14 @@
-from board import MCU
 from cli.scenes.main_scene import MainScene
 from cli.scenes.setting import SettingScene
 from cli.scenes.progmem_scene import ProgMemScene
 from cli.scenes.datamem_scene import DataMemScene
-import curses
+import curses, time
 
 
-class Application:
-    def __init__(self):
-        self.mcu = MCU()
-        self.mcu.run()
+class CLIMonitor:
+    def __init__(self, mcu, mcu_clock):
+        self.mcu = mcu
+        self.mcu_clock = mcu_clock
 
         self.scenes = [
             MainScene("Main Control", self.mcu),
@@ -43,32 +42,31 @@ class Application:
     def mainloop(self, stdscr):
         stdscr.nodelay(False)
         stdscr.keypad(True)
+        stdscr.timeout(100)
         curses.curs_set(0)
 
         while True:
-            stdscr.clear()
+            stdscr.erase()
 
             self.current_scene().draw(stdscr)
             self.draw_tabbar(stdscr)
+            stdscr.noutrefresh()
 
-            stdscr.refresh()
+            key = stdscr.getch()
+            listener = self.current_scene().event_listener(key)
+            if not listener:
+                if key == ord("q"):
+                    self.mcu_clock.stop()
+                    break
+                if key in [ord("C"), ord("c")]:
+                    # CLOCK
+                    self.mcu.PC.cycle()
+                if key == curses.KEY_RIGHT:
+                    self.next_scene()
+                if key == curses.KEY_LEFT:
+                    self.prev_scene()
 
-            try:
-                key = stdscr.getch()
-                listener = self.current_scene().event_listener(key)
-                if not listener:
-                    if key in [ord("C"), ord("c")]:
-                        # CLOCK
-                        self.mcu.PC.cycle()
-                    if key in [ord("R"), ord("r")]:
-                        # REBOOT
-                        self.mcu.run()
-                    if key == curses.KEY_RIGHT:
-                        self.next_scene()
-                    if key == curses.KEY_LEFT:
-                        self.prev_scene()
-            except KeyboardInterrupt:
-                break
+            curses.doupdate()
 
     def run(self):
         curses.wrapper(self.mainloop)

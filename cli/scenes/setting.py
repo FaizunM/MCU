@@ -7,7 +7,7 @@ class SettingScene(BaseScene):
     def draw(self, stdscr):
         stdscr.box()
         stdscr.addstr(0, 2, f" {self.title} ")
-        stdscr.refresh()
+        stdscr.noutrefresh()
 
     def event_listener(self, key):
         return False

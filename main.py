@@ -1,7 +1,5 @@
-from cli import Application
-import sys
+from application import MCUBoard
 
 if __name__ == "__main__":
-    app = Application()
+    app = MCUBoard()
     app.run()
-    sys.exit()

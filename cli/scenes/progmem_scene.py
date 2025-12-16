@@ -61,7 +61,7 @@ class ProgMemScene(BaseScene):
 
                 except:
                     pass
-        stdscr.refresh()
+        stdscr.noutrefresh()
 
     def event_listener(self, key):
         if key == curses.KEY_DOWN:

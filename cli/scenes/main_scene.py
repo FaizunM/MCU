@@ -80,7 +80,7 @@ class MainScene(BaseScene):
                 f" {'->' if index == self.select_option else '  '} [{index + 1}] {option}",
             )
 
-        stdscr.refresh()
+        stdscr.noutrefresh()
 
         self.tabbing[self.select_option].draw()
 

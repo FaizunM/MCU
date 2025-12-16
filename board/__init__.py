@@ -11,7 +11,6 @@ class MCU:
         self.program_memory = ProgramMemory()     
         self.data_memory = DataMemory()     
         self.PC = ProgramCounter(self.data_memory, self.program_memory)
-
         
     def boot(self):
         # BOOT Size Configuration
@@ -54,6 +53,6 @@ class MCU:
         else:
             self.PC.counter = self.program_memory.bootloader_start
 
-    def run(self):
+    def setup(self):
         self.boot()
         self.program_memory.load_bootloader()
