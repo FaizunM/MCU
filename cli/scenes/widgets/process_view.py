@@ -11,7 +11,9 @@ class ProcessView:
         self.pc_pos = 0x0
 
     def draw(self):
+        self.offset = self.mcu.PC.counter
         self.data = self.mcu.program_memory.memory
+        self.win.erase()
         self.win.box()
         self.win.addstr(0, 2, f" {self.title} ")
         h, w = self.win.getmaxyx()
@@ -40,7 +42,6 @@ class ProcessView:
         self.win.addstr(2, 35, f"Decode")
         for y in range(row):
             try:
-
                 self.win.addstr(
                     y + 4,
                     35,

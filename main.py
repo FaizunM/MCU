@@ -1,4 +1,4 @@
-from application import MCUBoard
+from board import MCUBoard
 
 if __name__ == "__main__":
     app = MCUBoard()

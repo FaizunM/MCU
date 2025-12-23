@@ -19,7 +19,10 @@ class DataMemory:
 
     def get_SREG(self):
         return self.get_GPIO(0x3F)
-
+    
+    def reset_SREG(self):
+        self.set_GPIO(0x3F, 0x0)
+    
     def get_SREG_bit(self, flag):
         sreg = self.get_GPIO(0x3F)
         return sreg >> self.flags.index(flag) & 0b1

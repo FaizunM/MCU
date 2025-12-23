@@ -640,7 +640,7 @@ class Assembler:
                 syntax.append(line)
                 self.counter += 1
 
-        encoded = [0] * 0x4000
+        encoded = [0xFFFF] * 0x4000
         for instruction in syntax:
             result = self.encode(instruction)
             print(f"{self.PC:08X}: {int(result, 2):016b} -> {instruction.strip()}")

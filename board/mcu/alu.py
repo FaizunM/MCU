@@ -1,8 +1,9 @@
 class ALU:
-    def __init__(self, PC, program_memory, data_memory):
+    def __init__(self, PC, program_memory, data_memory, bls):
         self.PC = PC
         self.program_memory = program_memory
         self.data_memory = data_memory
+        self.bls = bls
 
     # Arithmetic and Logic Instructions SECTION
     def ADD(self, Rd, Rs):
@@ -1234,31 +1235,42 @@ class ALU:
         self.data_memory.set(k, d)
 
     def LPM(self, Rd, Z_type):
-        if Rd == None:
+        if Rd == 0b0:
             ZH = self.data_memory.get_GPR(31) & 0xFF
             ZL = self.data_memory.get_GPR(30) & 0xFF
 
             Z = ZH << 8 | ZL
-            byte = self.program_memory.get_data_bus(Z)
-
-            self.data_memory.set_GPR(0x0, byte)
-
-        if Z_type == "Z":
+            
+        if Z_type == 0b01:
             ZH = self.data_memory.get_GPR(31) & 0xFF
             ZL = self.data_memory.get_GPR(30) & 0xFF
 
             Z = ZH << 8 | ZL
-            byte = self.program_memory.get_data_bus(Z)
 
-            self.data_memory.set_GPR(Rd, byte)
-        if Z_type == "Z+":
+        if Z_type == 0b10:
             ZH = self.data_memory.get_GPR(31) & 0xFF
             ZL = self.data_memory.get_GPR(30) & 0xFF
 
             Z = (ZH << 8 | ZL) + 1
-            byte = self.program_memory.get_data_bus(Z)
-
-            self.data_memory.set_GPR(Rd, byte)
+        
+        byte = self.program_memory.get_data_bus(Z)
+        
+        if self.bls.lock_bits.BLB0_mode() == 3:
+            if (
+                self.PC >= self.program_memory.bootloader_start
+                and self.PC <= self.program_memory.bootloader_end
+            ):
+                return
+            
+        if self.bls.lock_bits.BLB1_mode() == 3:
+            if (
+                self.PC >= self.program_memory.application_start
+                and self.PC <= self.program_memory.application_end
+            ):
+                return
+            
+        
+        self.data_memory.set_GPR(Rd, byte)
 
     def SPM(self):
         ZH = self.data_memory.get_GPR(31) & 0xFF
@@ -1266,6 +1278,34 @@ class ALU:
 
         Z = ZH << 8 | ZL
 
+        if self.bls.lock_bits.BLB0_mode() in [2, 4]:
+            if (
+                Z >= self.program_memory.bootloader_start
+                and Z <= self.program_memory.bootloader_end
+            ):
+                return
+            
+        if self.bls.lock_bits.BLB0_mode() == 3:
+            if (
+                self.PC >= self.program_memory.bootloader_start
+                and self.PC <= self.program_memory.bootloader_end
+            ):
+                return
+            
+        if self.bls.lock_bits.BLB1_mode() in [2, 4]:
+            if (
+                Z >= self.program_memory.application_start
+                and Z <= self.program_memory.application_end
+            ):
+                return
+        
+        if self.bls.lock_bits.BLB1_mode() == 3:
+            if (
+                self.PC >= self.program_memory.application_start
+                and self.PC <= self.program_memory.application_end
+            ):
+                return
+            
         DH = self.data_memory.get_GPR(1) & 0xFF
         DL = self.data_memory.get_GPR(0) & 0xFF
 

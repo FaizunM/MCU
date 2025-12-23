@@ -12,6 +12,7 @@ class RegisterView:
 
     def draw(self):
         self.data = self.getter()
+        self.win.erase()
         self.win.box()
         self.win.addstr(0, 2, f" {self.title} ")
         h, w = self.win.getmaxyx()
