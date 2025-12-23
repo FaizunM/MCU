@@ -2,18 +2,10 @@
 .equ RAMEND = 0x08FF
 
 RJMP Start
-NOP
 
 Start:
-    LDI R16, 0x14
-    LDI R17, 0x15
-    CALL TEST
+    LDI R16, 0x20
+    LDI R17, 0x00
+    OUT 0x05, R16
+    OUT 0x04, R17
     NOP
-
-TEST:
-    PUSH R16
-    LDI R16, 0x18
-    POP R16
-    RET
-
-

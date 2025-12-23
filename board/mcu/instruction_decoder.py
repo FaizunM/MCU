@@ -1,12 +1,10 @@
-from board.mcu.alu import ALU
-
-
 class InstructionDecoder:
-    def __init__(self, PC, program_memory, data_memory):
-        self.PC = PC
+    def __init__(self, program_memory):
         self.program_memory = program_memory
-        self.data_memory = data_memory
-        self.ALU = ALU(self.PC, self.program_memory, self.data_memory)
+        self.ALU = None
+        
+    def set_ALU(self, alu):
+        self.ALU = alu
 
     def signed_12bit(self, value):
         value &= 0xFFF
@@ -94,10 +92,9 @@ class InstructionDecoder:
             else:
                 self.ALU.BRCC(k)
         elif code & 0b111 == 0b000 and code >> 10 & 0b111111 == 0b111100:
-            s = code & 0b111
             k = code >> 3 & 0b1111111
             if disassembly:
-                return f"BRCS {s}, {hex(k)}"
+                return f"BRCS {hex(k)}"
             else:
                 self.ALU.BRCS(k)
         elif code == 0b1001010110011000:
@@ -233,7 +230,7 @@ class InstructionDecoder:
             if disassembly:
                 return f"CBI {hex(A)}, {b}"
             else:
-                self.ALU.CBI(k)
+                self.ALU.CBI(A, b)
         elif code & 0xFFFF == 0b1001010010001000:
             if disassembly:
                 return f"CLC"
@@ -286,7 +283,7 @@ class InstructionDecoder:
             if disassembly:
                 return f"COM R{d}"
             else:
-                self.ALU.COM(d, r)
+                self.ALU.COM(d)
         elif code >> 10 & 0b111111 == 0b000101:
             d = code >> 4 & 0b11111
             r = (code >> 9 & 0b1) << 4 | code & 0b1111
@@ -354,7 +351,7 @@ class InstructionDecoder:
             if disassembly:
                 return f"ICALL"
             else:
-                self.ALU.ICALL(d, r)
+                self.ALU.ICALL()
         elif code & 0xFFFF == 0b1001010000001001:
             if disassembly:
                 return f"IJMP"
@@ -372,7 +369,7 @@ class InstructionDecoder:
             if disassembly:
                 return f"INC R{d}"
             else:
-                self.ALU.INC(d, r)
+                self.ALU.INC(d)
         elif code >> 1 & 0b111 == 0b110 and code >> 9 & 0b1111111 == 0b1001010:
             if disassembly:
                 part2 = self.program_memory.memory[address + 1]
@@ -457,26 +454,26 @@ class InstructionDecoder:
             if disassembly:
                 return f"LDS R{d}, {hex(k)}"
             else:
-                self.ALU.LDS(d, r)
+                self.ALU.LDS(d, k)
         elif code & 0xFFFF == 0b1001010111001000:
             if disassembly:
                 return f"LPM"
             else:
-                self.ALU.LPM(None, None)
+                self.ALU.LPM(0b0, 0b0)
         elif code & 0b1111 == 0b0100 and code >> 9 & 0b1111111 == 0b1001000:
             d = code >> 4 & 0b11111
-            
+
             if disassembly:
                 return f"LPM R{d}, Z"
             else:
-                self.ALU.LPM(d, "Z")
+                self.ALU.LPM(d, 0b01)
         elif code & 0b1111 == 0b0101 and code >> 9 & 0b1111111 == 0b1001000:
             d = code >> 4 & 0b11111
-            
+
             if disassembly:
                 return f"LPM R{d}, Z+"
             else:
-                self.ALU.LPM(d, "Z+")
+                self.ALU.LPM(d, 0b10)
         elif code & 0b1111 == 0b0110 and code >> 9 & 0b1111111 == 0b1001010:
             d = code >> 4 & 0b11111
             if disassembly:
@@ -512,8 +509,11 @@ class InstructionDecoder:
             else:
                 self.ALU.MULS(d, r)
         elif code >> 3 & 0b1 == 0b0 and code >> 7 & 0b111111111 == 0b000000110:
+            d = (code >> 4 & 0b111) + 16
+            r = (code & 0b111) + 16
+
             if disassembly:
-                return f"MULSU"
+                return f"MULSU R{d}, R{r}"
             else:
                 self.ALU.MULSU(d, r)
         elif code & 0b1111 == 0b0001 and code >> 9 & 0b1111111 == 0b1001010:
@@ -521,7 +521,7 @@ class InstructionDecoder:
             if disassembly:
                 return f"NEG R{d}"
             else:
-                self.ALU.NEG(d, r)
+                self.ALU.NEG(d)
         elif code & 0xFFFF == 0b0000000000000000:
             if disassembly:
                 return f"NOP"
@@ -582,16 +582,19 @@ class InstructionDecoder:
                 self.ALU.RJMP(k)
 
         elif code >> 10 & 0b111111 == 0b000111:
+            d = code & 0b11111
+            r = code >> 5 & 0b11111
+            # BELUM
             if disassembly:
-                return f"ROL"
+                return f"ROL R{d}, R{r}"
             else:
-                self.ALU.ROL(d, r)
+                self.ALU.ROL(d)
         elif code & 0b1111 == 0b0111 and code >> 9 & 0b1111111 == 0b1001010:
             d = code >> 4 & 0b11111
             if disassembly:
                 return f"ROR R{d}"
             else:
-                self.ALU.ROR(d, r)
+                self.ALU.ROR(d)
         elif code >> 10 & 0b111111 == 0b000010:
             d = code >> 4 & 0b11111
             r = (code >> 9 & 0b1) << 4 | code & 0b1111
@@ -612,14 +615,14 @@ class InstructionDecoder:
             if disassembly:
                 return f"SBI {hex(A)}, {b}"
             else:
-                self.ALU.SBI(d, r)
+                self.ALU.SBI(A, b)
         elif code >> 8 & 0xFF == 0b10011001:
             A = code >> 3 & 0b11111
             b = code & 0b111
             if disassembly:
                 return f"SBIC {hex(A)}, {b}"
             else:
-                self.ALU.SBIC(d, r)
+                self.ALU.SBIC(A, b)
         elif code >> 8 & 0xFF == 0b10011011:
             A = code >> 3 & 0b11111
             b = code & 0b111
@@ -628,6 +631,8 @@ class InstructionDecoder:
             else:
                 self.ALU.SBIS(A, b)
         elif code >> 8 & 0xFF == 0b10010111:
+            d = code >> 4 & 0b11
+            K = (code >> 6 & 0b11) << 4 | code & 0b1111
             if disassembly:
                 return f"SBIW"
             else:
@@ -638,8 +643,10 @@ class InstructionDecoder:
             if disassembly:
                 return f"SBR R{d}, {hex(K)}"
             else:
-                self.ALU.SBR(d, r)
+                self.ALU.SBR(d, K)
         elif code >> 3 & 0b1 == 0b0 and code >> 9 & 0b1111111 == 0b1111110:
+            r = code >> 4 & 0b11111
+            b = code & 0b111
             if disassembly:
                 return f"SBRC"
             else:
@@ -655,53 +662,53 @@ class InstructionDecoder:
             if disassembly:
                 return f"SEC"
             else:
-                self.ALU.SEC(d, r)
+                self.ALU.SEC()
         elif code & 0xFFFF == 0b1001010001011000:
             if disassembly:
                 return f"SEH"
             else:
-                self.ALU.SEH(d, r)
+                self.ALU.SEH()
         elif code & 0xFFFF == 0b1001010001111000:
             if disassembly:
                 return f"SEI"
             else:
-                self.ALU.SEI(d, r)
+                self.ALU.SEI()
         elif code & 0xFFFF == 0b1001010000101000:
             if disassembly:
                 return f"SEN"
             else:
-                self.ALU.SEN(d, r)
+                self.ALU.SEN()
         elif code & 0b1111 == 0b1111 and code >> 8 & 0b11111111 == 0b11101111:
             d = code >> 4 & 0b1111
             if disassembly:
                 return f"SER R{d}"
             else:
-                self.ALU.SER(d, r)
+                self.ALU.SER()
         elif code & 0xFFFF == 0b1001010001001000:
             if disassembly:
                 return f"SES"
             else:
-                self.ALU.SES(d, r)
+                self.ALU.SES()
         elif code & 0xFFFF == 0b1001010001101000:
             if disassembly:
                 return f"SET"
             else:
-                self.ALU.SET(d, r)
+                self.ALU.SET()
         elif code & 0xFFFF == 0b1001010000111000:
             if disassembly:
                 return f"SEV"
             else:
-                self.ALU.SEV(d, r)
+                self.ALU.SEV()
         elif code & 0xFFFF == 0b1001010000011000:
             if disassembly:
                 return f"SEZ"
             else:
-                self.ALU.SEZ(d, r)
+                self.ALU.SEZ()
         elif code & 0xFFFF == 0b1001010110001000:
             if disassembly:
                 return f"SLEEP"
             else:
-                self.ALU.SLEEP(d, r)
+                self.ALU.SLEEP()
         elif code & 0xFFFF == 0b1001010111101000:
             if disassembly:
                 return f"SPM"
@@ -774,7 +781,7 @@ class InstructionDecoder:
                 k = self.program_memory.memory[address + 1]
             else:
                 k = self.program_memory.memory[address]
-                            
+
             if disassembly:
                 return f"STS {hex(k)}, R{d}"
             else:
@@ -798,12 +805,13 @@ class InstructionDecoder:
             if disassembly:
                 return f"SWAP R{d}"
             else:
-                self.ALU.SWAP(d, r)
+                self.ALU.SWAP(d)
         elif code >> 10 & 0b111111 == 0b001000:
+            d = code & 0b11111
             if disassembly:
                 return f"TST"
             else:
-                self.ALU.TST(d, r)
+                self.ALU.TST(d)
         elif code & 0xFFFF == 0b1001010110101000:
             if disassembly:
                 return f"WDR"
@@ -811,5 +819,5 @@ class InstructionDecoder:
                 self.ALU.WDR(d, r)
         else:
             if disassembly:
-                return f"{hex(code)} - Skip"
+                return f"{hex(code)} Unknown Opcode"
         # CBR
